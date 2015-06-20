@@ -152,11 +152,15 @@ HangingConnection::HangingConnection(const QDBusConnection &dbusConnection,
 void HangingConnection::onDisconnected()
 {
     // save last received event timestamp so next connection we just retrieve the delta
-    mSettings->setValue("lastKnownUpdate", mLastKnownUpdate);
-    mSettings->setValue("conversationIds", QString(QStringList(mConversations.keys()).join(",")));
-    mHangishClient->hangishDisconnect();
-    mHangishClient->deleteLater();
-    mHangishClient = NULL;
+    if (mSettings) {
+        mSettings->setValue("lastKnownUpdate", mLastKnownUpdate);
+        mSettings->setValue("conversationIds", QString(QStringList(mConversations.keys()).join(",")));
+    }
+    if (mHangishClient) {
+        mHangishClient->hangishDisconnect();
+        mHangishClient->deleteLater();
+        mHangishClient = NULL;
+    }
     setStatus(Tp::ConnectionStatusDisconnected, Tp::ConnectionStatusReasonRequested);
 }
 
