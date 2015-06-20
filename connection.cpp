@@ -151,8 +151,10 @@ HangingConnection::HangingConnection(const QDBusConnection &dbusConnection,
 
 void HangingConnection::onDisconnected()
 {
-    // save last received event timestamp so next connection we just retrieve the delta
-    if (mSettings) {
+    // save last received event timestamp so next connection we just retrieve the delta.
+    // also do not save properties if we are not connected yet, otherwise we will overwrite
+    // conversationIds with an empty value
+    if (mSettings && status() == Tp::ConnectionStatusConnected) {
         mSettings->setValue("lastKnownUpdate", mLastKnownUpdate);
         mSettings->setValue("conversationIds", QString(QStringList(mConversations.keys()).join(",")));
     }
