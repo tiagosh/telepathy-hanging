@@ -95,11 +95,13 @@ HangingTextChannel::HangingTextChannel(HangingConnection *conn, const QString &c
 
 void HangingTextChannel::onAddMembers(const Tp::UIntList& handles, const QString& message, Tp::DBusError* error)
 {
+    Q_UNUSED(message)
     addMembers(mConnection->inspectHandles(Tp::HandleTypeContact, handles, error));
 }
 
 void HangingTextChannel::onRemoveMembers(const Tp::UIntList& handles, const QString& message, Tp::DBusError* error)
 {
+    Q_UNUSED(message)
     Q_FOREACH(uint handle, handles) {
         Q_FOREACH(const QString &participant, mConnection->inspectHandles(Tp::HandleTypeContact, Tp::UIntList() << handle, error)) {
             mParticipants.removeAll(participant);
@@ -157,6 +159,8 @@ void HangingTextChannel::sendDeliveryReport(const QString &messageId, QString id
 
 QString HangingTextChannel::sendMessage(Tp::MessagePartList message, uint flags, Tp::DBusError* error)
 {
+    Q_UNUSED(flags)
+    Q_UNUSED(error)
     Tp::MessagePart body = message.at(1);
     QString id;
 
@@ -245,6 +249,7 @@ void HangingTextChannel::onTypingTimeout()
 
 void HangingTextChannel::setChatState(uint state, Tp::DBusError *error)
 {
+    Q_UNUSED(error)
     if (state == Tp::ChannelChatStateComposing) {
         mTypingTimer.start(5000);
         mConnection->hangishClient()->setTyping(conversationId(), 1);

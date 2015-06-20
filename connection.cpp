@@ -166,7 +166,7 @@ void HangingConnection::onDisconnected()
 
 void HangingConnection::connect(Tp::DBusError *error)
 {
-    qDebug() << "HangingConnection::connect";
+    Q_UNUSED(error)
     if (status() == Tp::ConnectionStatusDisconnected) {
         setStatus(Tp::ConnectionStatusConnecting, Tp::ConnectionStatusReasonRequested);
         mLastKnownUpdate = mSettings->value("lastKnownUpdate", 0).value<quint64>();
@@ -245,6 +245,8 @@ void HangingConnection::on2FactorAuthRequired()
 
 void HangingConnection::startMechanismWithData(const QString &mechanism, const QByteArray &data, Tp::DBusError *error)
 {
+    Q_UNUSED(mechanism)
+    Q_UNUSED(error)
     saslIface->setSaslStatus(Tp::SASLStatusInProgress, QLatin1String("InProgress"), QVariantMap());
     mHangishClient->send2ndFactorPin(QString::fromLatin1(data.constData()));
 }
@@ -331,6 +333,7 @@ Tp::ContactAttributesMap HangingConnection::getContactListAttributes(const QStri
 
 void HangingConnection::onClientSetPresenceResponse(quint64 requestId, ClientSetPresenceResponse &cspr)
 {
+    Q_UNUSED(requestId)
     if (cspr.responseheader().has_status() && cspr.responseheader().status() == ClientResponseHeader_ClientResponseStatus_OK) {
         mRequestedPresence.clear();
     }
@@ -428,7 +431,8 @@ HangingConnection::~HangingConnection() {
 
 uint HangingConnection::setPresence(const QString& newStatus, const QString& statusMessage, Tp::DBusError *error)
 {
-    qDebug() << "setPresence" << newStatus;
+    Q_UNUSED(error)
+    Q_UNUSED(statusMessage)
     if (status() != Tp::ConnectionStatusConnected) {
         mRequestedPresence = newStatus;
     } else {
