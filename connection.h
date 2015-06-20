@@ -40,9 +40,9 @@ class HangingConnection : public Tp::BaseConnection
     Q_DISABLE_COPY(HangingConnection)
 public:
     HangingConnection(const QDBusConnection &dbusConnection,
-                    const QString &cmName,
-                    const QString &protocolName,
-                    const QVariantMap &parameters);
+                      const QString &cmName,
+                      const QString &protocolName,
+                      const QVariantMap &parameters);
 
     // telepathy callbacks
 

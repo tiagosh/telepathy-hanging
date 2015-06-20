@@ -39,7 +39,8 @@ Protocol::Protocol(const QDBusConnection &dbusConnection, const QString &name)
     setParameters(parameters);
 }
 
-Tp::BaseConnectionPtr Protocol::createConnection(const QVariantMap &parameters, Tp::DBusError *error) {
+Tp::BaseConnectionPtr Protocol::createConnection(const QVariantMap &parameters, Tp::DBusError *error)
+{
     Q_UNUSED(error);
     return Tp::BaseConnection::create<HangingConnection>("hangouts", name().toLatin1(), parameters);
 }

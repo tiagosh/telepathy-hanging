@@ -29,9 +29,9 @@
 #include "protocol.h"
 
 HangingConnection::HangingConnection(const QDBusConnection &dbusConnection,
-                            const QString &cmName,
-                            const QString &protocolName,
-                            const QVariantMap &parameters) :
+                                     const QString &cmName,
+                                     const QString &protocolName,
+                                     const QVariantMap &parameters) :
     Tp::BaseConnection(dbusConnection, cmName, protocolName, parameters),
     mLastKnownUpdate(0),
     mHandleCount(0),
@@ -64,7 +64,7 @@ HangingConnection::HangingConnection(const QDBusConnection &dbusConnection,
     text.fixedProperties[TP_QT_IFACE_CHANNEL+".TargetHandleType"]  = Tp::HandleTypeContact;
     text.allowedProperties.append(TP_QT_IFACE_CHANNEL+".TargetHandle");
     text.allowedProperties.append(TP_QT_IFACE_CHANNEL+".TargetID");
- 
+
     Tp::RequestableChannelClass groupChat;
     groupChat.fixedProperties[TP_QT_IFACE_CHANNEL + QLatin1String(".ChannelType")] = TP_QT_IFACE_CHANNEL_TYPE_TEXT;
     groupChat.fixedProperties[TP_QT_IFACE_CHANNEL + QLatin1String(".TargetHandleType")]  = Tp::HandleTypeRoom;
@@ -117,19 +117,19 @@ HangingConnection::HangingConnection(const QDBusConnection &dbusConnection,
     contactsIface = Tp::BaseConnectionContactsInterface::create();
     contactsIface->setGetContactAttributesCallback(Tp::memFun(this,&HangingConnection::getContactAttributes));
     contactsIface->setContactAttributeInterfaces(QStringList()
-                                                 << TP_QT_IFACE_CONNECTION
-                                                 << TP_QT_IFACE_CONNECTION_INTERFACE_CONTACT_LIST
-                                                 << TP_QT_IFACE_CONNECTION_INTERFACE_ALIASING
-                                                 << TP_QT_IFACE_CONNECTION_INTERFACE_SIMPLE_PRESENCE
-                                                 << TP_QT_IFACE_CONNECTION_INTERFACE_AVATARS);
+            << TP_QT_IFACE_CONNECTION
+            << TP_QT_IFACE_CONNECTION_INTERFACE_CONTACT_LIST
+            << TP_QT_IFACE_CONNECTION_INTERFACE_ALIASING
+            << TP_QT_IFACE_CONNECTION_INTERFACE_SIMPLE_PRESENCE
+            << TP_QT_IFACE_CONNECTION_INTERFACE_AVATARS);
     plugInterface(Tp::AbstractConnectionInterfacePtr::dynamicCast(contactsIface));
 
     /* Connection.Interface.Avatars */
     avatarsIface = Tp::BaseConnectionAvatarsInterface::create();
     avatarsIface->setAvatarDetails(Tp::AvatarSpec(/* supportedMimeTypes */ QStringList() << QLatin1String("image/jpeg"),
-                                                  /* minHeight */ 0, /* maxHeight */ 160, /* recommendedHeight */ 160,
-                                                  /* minWidth */ 0, /* maxWidth */ 160, /* recommendedWidth */ 160,
-                                                  /* maxBytes */ 10240));
+                                   /* minHeight */ 0, /* maxHeight */ 160, /* recommendedHeight */ 160,
+                                   /* minWidth */ 0, /* maxWidth */ 160, /* recommendedWidth */ 160,
+                                   /* maxBytes */ 10240));
     avatarsIface->setGetKnownAvatarTokensCallback(Tp::memFun(this, &HangingConnection::getKnownAvatarTokens));
     avatarsIface->setRequestAvatarsCallback(Tp::memFun(this, &HangingConnection::requestAvatars));
     plugInterface(Tp::AbstractConnectionInterfacePtr::dynamicCast(avatarsIface));
@@ -145,7 +145,7 @@ HangingConnection::HangingConnection(const QDBusConnection &dbusConnection,
     //contactListIface->setRequestSubscriptionCallback(Tp::memFun(this, &HangingConnection::requestSubscription));
     //contactListIface->setRemoveContactsCallback(Tp::memFun(this, &HangingConnection::removeContacts));
     plugInterface(Tp::AbstractConnectionInterfacePtr::dynamicCast(contactListIface));
-    
+
     QObject::connect(this, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
 }
 
@@ -190,7 +190,7 @@ void HangingConnection::onAuthFailed(AuthenticationStatus status, QString reason
 {
     QVariantMap details;
 
-    switch(status) {
+    switch (status) {
     case AUTH_WRONG_2FACTOR_PIN:
         details[QLatin1String("server-message")] = reason;
         saslIface->setSaslStatus(Tp::SASLStatusServerFailed, TP_QT_ERROR_AUTHENTICATION_FAILED, details);
@@ -220,16 +220,16 @@ void HangingConnection::on2FactorAuthRequired()
     Tp::BaseChannelPtr baseChannel = Tp::BaseChannel::create(this, TP_QT_IFACE_CHANNEL_TYPE_SERVER_AUTHENTICATION);
 
     Tp::BaseChannelServerAuthenticationTypePtr authType
-            = Tp::BaseChannelServerAuthenticationType::create(TP_QT_IFACE_CHANNEL_INTERFACE_SASL_AUTHENTICATION);
+        = Tp::BaseChannelServerAuthenticationType::create(TP_QT_IFACE_CHANNEL_INTERFACE_SASL_AUTHENTICATION);
     baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(authType));
 
     saslIface = Tp::BaseChannelSASLAuthenticationInterface::create(QStringList() << QLatin1String("X-TELEPATHY-PASSWORD"),
-                                                                   /* hasInitialData */ false,
-                                                                   /* canTryAgain */ true,
-                                                                   /* authorizationIdentity */ mAccount,
-                                                                   /* defaultUsername */ QString(),
-                                                                   /* defaultRealm */ QString(),
-                                                                   /* maySaveResponse */ false);
+                /* hasInitialData */ false,
+                /* canTryAgain */ true,
+                /* authorizationIdentity */ mAccount,
+                /* defaultUsername */ QString(),
+                /* defaultRealm */ QString(),
+                /* maySaveResponse */ false);
 
     saslIface->setStartMechanismWithDataCallback( Tp::memFun(this, &HangingConnection::startMechanismWithData));
 
@@ -371,7 +371,7 @@ void HangingConnection::onInitFinished()
 
     Tp::ContactSubscriptionMap changes;
     Tp::HandleIdentifierMap identifiersMap;
-    for(int i = 0; i < chatIds.size(); ++i) {
+    for (int i = 0; i < chatIds.size(); ++i) {
         Tp::ContactSubscriptions change;
         change.publish = Tp::SubscriptionStateYes;
         change.publishRequest = QString();
@@ -383,7 +383,7 @@ void HangingConnection::onInitFinished()
     Tp::HandleIdentifierMap removals;
     contactListIface->contactsChangedWithID(changes, identifiersMap, removals);
     Tp::SimpleContactPresences newPresences;
-    for(int i = 0; i < chatIds.size(); ++i) {
+    for (int i = 0; i < chatIds.size(); ++i) {
         QString chatId = chatIds[i];
         uint handle = ensureContactHandle(chatId);
         Tp::SimplePresence presence;
@@ -416,7 +416,8 @@ HangingTextChannel* HangingConnection::textChannelForConversationId(const QStrin
     return NULL;
 }
 
-HangingConnection::~HangingConnection() {
+HangingConnection::~HangingConnection()
+{
     dbusConnection().unregisterObject(objectPath(), QDBusConnection::UnregisterTree);
     dbusConnection().unregisterService(busName());
     if (mHangishClient) {
@@ -472,7 +473,7 @@ Tp::ContactAttributesMap HangingConnection::getContactAttributes(const Tp::UIntL
             }
             attributes[TP_QT_IFACE_CONNECTION_INTERFACE_SIMPLE_PRESENCE+"/presence"] = QVariant::fromValue(presence);
         }
- 
+
         if (ifaces.contains(TP_QT_IFACE_CONNECTION_INTERFACE_ALIASING)) {
             QString alias = "Unknown";
             if (entity.has_properties() && entity.properties().has_displayname()) {
@@ -499,7 +500,7 @@ QStringList HangingConnection::inspectHandles(uint handleType, const Tp::UIntLis
 {
     QStringList identifiers;
 
-    if( handleType != Tp::HandleTypeContact && handleType != Tp::HandleTypeRoom) {
+    if ( handleType != Tp::HandleTypeContact && handleType != Tp::HandleTypeRoom) {
         error->set(TP_QT_ERROR_INVALID_ARGUMENT,"Not supported");
         return QStringList();
     }
@@ -524,7 +525,7 @@ Tp::UIntList HangingConnection::requestHandles(uint handleType, const QStringLis
     qDebug() << "requestHandles";
     Tp::UIntList handles;
 
-    if( handleType != Tp::HandleTypeContact && handleType != Tp::HandleTypeRoom) {
+    if ( handleType != Tp::HandleTypeContact && handleType != Tp::HandleTypeRoom) {
         error->set(TP_QT_ERROR_INVALID_ARGUMENT, "Not supported");
         return Tp::UIntList();
     }
@@ -826,7 +827,7 @@ HangingTextChannel* HangingConnection::ensureTextChannel(const QString &conversa
     ClientConversationState conversation = mConversations[conversationId];
     HangingTextChannel *channel = textChannelForConversationId(conversationId);
 
-    if(channel) {
+    if (channel) {
         return channel;
     }
 
@@ -855,7 +856,7 @@ HangingTextChannel* HangingConnection::ensureTextChannel(const QString &conversa
     }
     ensureChannel(request, yours, false, &error);
 
-    if(error.isValid()) {
+    if (error.isValid()) {
         qWarning() << "Error creating channel for incoming message" << error.name() << error.message();
         return NULL;
     }
@@ -868,7 +869,7 @@ void HangingConnection::processClientEvent(ClientEvent &event, bool scrollback)
     QString conversationId(event.conversationid().id().c_str());
     QString fromId(event.senderid().chatid().c_str());
     HangingTextChannel *channel = ensureTextChannel(conversationId, fromId);
-    if(channel) {
+    if (channel) {
         channel->eventReceived(event, scrollback);
         return;
     }

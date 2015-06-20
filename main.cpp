@@ -34,9 +34,9 @@ int main(int argc, char *argv[])
     Tp::enableWarnings(true);
 
     Tp::BaseProtocolPtr proto = Tp::BaseProtocol::create<Protocol>(
-            QDBusConnection::sessionBus(), QLatin1String("hangouts"));
+                                    QDBusConnection::sessionBus(), QLatin1String("hangouts"));
     Tp::BaseConnectionManagerPtr cm = Tp::BaseConnectionManager::create(
-            QDBusConnection::sessionBus(), QLatin1String("hanging"));
+                                          QDBusConnection::sessionBus(), QLatin1String("hanging"));
     cm->addProtocol(proto);
     cm->registerObject();
 

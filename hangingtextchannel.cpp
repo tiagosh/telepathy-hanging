@@ -47,16 +47,16 @@ HangingTextChannel::HangingTextChannel(HangingConnection *conn, const QString &c
 
     QStringList supportedContentTypes = QStringList() << "text/plain";
 
-    Tp::UIntList messageTypes = Tp::UIntList() << 
-                                Tp::ChannelTextMessageTypeNormal << 
+    Tp::UIntList messageTypes = Tp::UIntList() <<
+                                Tp::ChannelTextMessageTypeNormal <<
                                 Tp::ChannelTextMessageTypeDeliveryReport;
     uint messagePartSupportFlags = 0;
     uint deliveryReportingSupport = Tp::DeliveryReportingSupportFlagReceiveSuccesses;
     mMessagesIface = Tp::BaseChannelMessagesInterface::create(textType.data(),
-                                                          supportedContentTypes,
-                                                          messageTypes,
-                                                          messagePartSupportFlags,
-                                                          deliveryReportingSupport);
+                     supportedContentTypes,
+                     messageTypes,
+                     messagePartSupportFlags,
+                     deliveryReportingSupport);
 
     mMessagesIface->setSendMessageCallback(Tp::memFun(this,&HangingTextChannel::sendMessage));
 
@@ -264,7 +264,7 @@ void HangingTextChannel::updateTypingState(const ClientSetTypingNotification &no
     uint handle =  mConnection->ensureContactHandle(notification.senderid().chatid().c_str());
     Tp::ChannelChatState state;
 
-    switch(notification.type()) {
+    switch (notification.type()) {
     case START:
         state = Tp::ChannelChatStateComposing;
         break;
