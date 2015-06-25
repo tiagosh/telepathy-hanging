@@ -211,7 +211,7 @@ void HangingTextChannel::eventReceived(ClientEvent &event, bool scrollback)
 
     Tp::MessagePart header;
     header["message-token"] = QDBusVariant(event.eventid().c_str());
-    header["message-received"] = QDBusVariant((uint)event.timestamp());
+    header["message-received"] = QDBusVariant(QDateTime::fromMSecsSinceEpoch(event.timestamp()/1000).toTime_t());
     header["message-sender"] = QDBusVariant(mConnection->ensureContactHandle(fromId));
     header["message-sender-id"] = QDBusVariant(fromId);
     header["message-type"] = QDBusVariant(Tp::ChannelTextMessageTypeNormal);
