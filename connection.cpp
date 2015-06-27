@@ -888,7 +888,7 @@ void HangingConnection::onClientStateUpdate(ClientStateUpdate &update)
             ClientPresenceResult presence = update.presencenotification().presence(i);
             QString chatId = presence.userid().chatid().c_str();
             uint handle = ensureContactHandle(chatId);
-            if (handle == selfHandle()) {
+            if (handle == selfHandle() || !mEntities.contains(chatId)) {
                 continue;
             }
             mEntities[chatId].set_allocated_presence(new ClientPresence(presence.presence()));
