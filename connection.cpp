@@ -39,7 +39,7 @@ HangingConnection::HangingConnection(const QDBusConnection &dbusConnection,
 {
     mAccount = parameters["account"].toString();
     mPassword = parameters["password"].toString();
-    mConfigurationDirectory = QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + "/" + mAccount + "/";
+    mConfigurationDirectory = QStandardPaths::writableLocation(QStandardPaths::DataLocation) + "/" + mAccount + "/";
     mTokenPath = mConfigurationDirectory + "cookies.json";
 
     // ensure cache dir is created
