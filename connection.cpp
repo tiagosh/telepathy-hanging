@@ -35,7 +35,8 @@ HangingConnection::HangingConnection(const QDBusConnection &dbusConnection,
     Tp::BaseConnection(dbusConnection, cmName, protocolName, parameters),
     mLastKnownUpdate(0),
     mHandleCount(0),
-    mHangishClient(NULL)
+    mHangishClient(NULL),
+    mDisconnectReason(Tp::ConnectionStatusReasonRequested)
 {
     mAccount = parameters["account"].toString();
     mPassword = parameters["password"].toString();
@@ -154,16 +155,21 @@ void HangingConnection::onDisconnected()
     // save last received event timestamp so next connection we just retrieve the delta.
     // also do not save properties if we are not connected yet, otherwise we will overwrite
     // conversationIds with an empty value
-    if (mSettings && status() == Tp::ConnectionStatusConnected) {
-        mSettings->setValue("lastKnownUpdate", mLastKnownUpdate);
-        mSettings->setValue("conversationIds", QString(QStringList(mConversations.keys()).join(",")));
+    if (mSettings) {
+        if (mLastKnownUpdate != 0) {
+            mSettings->setValue("lastKnownUpdate", mLastKnownUpdate);
+        }
+        if (!mConversations.isEmpty()) {
+            mSettings->setValue("conversationIds", QString(QStringList(mConversations.keys()).join(",")));
+        }
     }
     if (mHangishClient) {
         mHangishClient->hangishDisconnect();
         mHangishClient->deleteLater();
         mHangishClient = NULL;
     }
-    setStatus(Tp::ConnectionStatusDisconnected, Tp::ConnectionStatusReasonRequested);
+    setStatus(Tp::ConnectionStatusDisconnected, mDisconnectReason);
+    deleteLater();
 }
 
 void HangingConnection::connect(Tp::DBusError *error)
@@ -183,8 +189,25 @@ void HangingConnection::connect(Tp::DBusError *error)
         QObject::connect(mHangishClient, SIGNAL(clientGetConversationResponse(quint64,ClientGetConversationResponse&)), this, SLOT(onClientGetConversationResponse(quint64,ClientGetConversationResponse&)));
         QObject::connect(mHangishClient, SIGNAL(clientSyncAllNewEventsResponse(ClientSyncAllNewEventsResponse&)), this, SLOT(onClientSyncAllNewEventsResponse(ClientSyncAllNewEventsResponse&)));
         QObject::connect(mHangishClient, SIGNAL(clientQueryPresenceResponse(quint64,ClientQueryPresenceResponse&)), this, SLOT(onClientQueryPresenceResponse(quint64,ClientQueryPresenceResponse&)));
+        QObject::connect(mHangishClient, SIGNAL(connectionStatusChanged(ConnectionStatus)), this, SLOT(onConnectionStatusChanged(ConnectionStatus)));
 
         mHangishClient->hangishConnect(mLastKnownUpdate);
+    }
+}
+
+void HangingConnection::onConnectionStatusChanged(ConnectionStatus status)
+{
+    switch(status) {
+    case CONNECTION_STATUS_DISCONNECTED:
+        mDisconnectReason = Tp::ConnectionStatusReasonNetworkError;
+        Q_EMIT disconnected();
+        break;
+    case CONNECTION_STATUS_CONNECTED:
+        setStatus(Tp::ConnectionStatusConnected, Tp::ConnectionStatusReasonNoneSpecified);
+        break;
+    case CONNECTION_STATUS_CONNECTING:
+        setStatus(Tp::ConnectionStatusConnecting, Tp::ConnectionStatusReasonNoneSpecified);
+        break;
     }
 }
 

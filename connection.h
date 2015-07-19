@@ -97,6 +97,7 @@ private Q_SLOTS:
     void onLoginNeeded();
     void onAvatarDownloaded();
     void onPopulateRoomList();
+    void onConnectionStatusChanged(ConnectionStatus status);
 
 private:
     uint newContactHandle(const QString &identifier);
@@ -126,6 +127,7 @@ private:
     QList<quint64> mPendingRequests;
     QMap<QString, ClientConversationParticipantData> mOtherContacts;
     QList<ClientEvent> mPendingNewEvents;
+    Tp::ConnectionStatusReason mDisconnectReason;
 
     Tp::BaseChannelSASLAuthenticationInterfacePtr saslIface;
     Tp::BaseConnectionContactListInterfacePtr contactListIface;
