@@ -517,7 +517,7 @@ Tp::ContactAttributesMap HangingConnection::getContactAttributes(const Tp::UIntL
         }
         attributesMap[handle] = attributes;
     }
-    qDebug() << attributesMap;
+
     return attributesMap;
 }
 
@@ -530,13 +530,11 @@ QStringList HangingConnection::inspectHandles(uint handleType, const Tp::UIntLis
         return QStringList();
     }
     QMap<uint, QString> handleMap = handleType == Tp::HandleTypeContact ? mContactHandles : mRoomHandles;
-    qDebug() << "HangingConnection::inspectHandles " << handles;
     Q_FOREACH( uint handle, handles) {
         if (handleMap.keys().contains(handle)) {
             identifiers.append(handleMap.value(handle));
         } else {
             qDebug() << "Not found " << handle;
-            qDebug() << handleMap.keys();
             error->set(TP_QT_ERROR_INVALID_HANDLE, "Handle not found");
             return QStringList();
         }
@@ -547,7 +545,6 @@ QStringList HangingConnection::inspectHandles(uint handleType, const Tp::UIntLis
 
 Tp::UIntList HangingConnection::requestHandles(uint handleType, const QStringList& identifiers, Tp::DBusError* error)
 {
-    qDebug() << "requestHandles";
     Tp::UIntList handles;
 
     if ( handleType != Tp::HandleTypeContact && handleType != Tp::HandleTypeRoom) {
@@ -567,7 +564,7 @@ Tp::UIntList HangingConnection::requestHandles(uint handleType, const QStringLis
             }
         }
     }
-    qDebug() << "requestHandles" << handles;
+
     return handles;
 }
 
@@ -594,7 +591,6 @@ QMap<QString, ClientConversationState> HangingConnection::getConversations()
 
 Tp::BaseChannelPtr HangingConnection::createRoomListChannel()
 {
-    qDebug() << Q_FUNC_INFO;
     Tp::BaseChannelPtr baseChannel = Tp::BaseChannel::create(this, TP_QT_IFACE_CHANNEL_TYPE_ROOM_LIST);
 
     roomListChannel = Tp::BaseChannelRoomListType::create();
@@ -621,7 +617,6 @@ void HangingConnection::roomListStopListing(Tp::DBusError *error)
 
 void HangingConnection::onPopulateRoomList()
 {
-    qDebug() << Q_FUNC_INFO;
     Tp::RoomInfoList rooms;
 
     Q_FOREACH (const QString &conversationId, mConversations.keys()) {
@@ -870,7 +865,6 @@ HangingTextChannel* HangingConnection::ensureTextChannel(const QString &conversa
     request[TP_QT_IFACE_CHANNEL + QLatin1String(".InitiatorHandle")] = ensureContactHandle(fromId);
 
     if (conversation.conversation().type() == STICKY_ONE_TO_ONE) {
-        //qDebug() << "FROM ID" << fromId << update.clientconversation().type();
         request[TP_QT_IFACE_CHANNEL + QLatin1String(".TargetHandleType")] = Tp::HandleTypeContact;
         request[TP_QT_IFACE_CHANNEL + QLatin1String(".TargetHandle")] = ensureContactHandle(fromId);
         request["conversationId"] = conversationId;
