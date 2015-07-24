@@ -273,7 +273,7 @@ void HangingConnection::startMechanismWithData(const QString &mechanism, const Q
     Q_UNUSED(mechanism)
     Q_UNUSED(error)
     saslIface->setSaslStatus(Tp::SASLStatusInProgress, QLatin1String("InProgress"), QVariantMap());
-    mHangishClient->send2ndFactorPin(QString::fromLatin1(data.constData()));
+    mHangishClient->sendChallengePin(QString::fromLatin1(data.constData()));
 }
 
 void HangingConnection::requestAvatars(const Tp::UIntList &contacts, Tp::DBusError *error)
