@@ -24,6 +24,7 @@
 #include <TelepathyQt/BaseChannel>
 #include <TelepathyQt/DBusObject>
 #include <QNetworkReply>
+#include <QCryptographicHash>
 
 #include "connection.h"
 #include "protocol.h"
@@ -1004,4 +1005,11 @@ quint64 HangingConnection::getConversation(const QString &conversationId, bool i
 
     clientGetConversationRequest.set_allocated_conversationspec(clientConversationSpec);
     return mHangishClient->getConversation(clientGetConversationRequest);
+}
+
+QString HangingConnection::uniqueName() const
+{
+    QString timestamp(QString::number(QDateTime::currentMSecsSinceEpoch()));
+    QString md5(QCryptographicHash::hash(timestamp.toLatin1(), QCryptographicHash::Md5).toHex());
+    return QString(QLatin1String("connection_%1")).arg(md5);
 }

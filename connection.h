@@ -76,6 +76,7 @@ public:
     QString conversationIdForChatId(const QString &chatId);
     HangishClient *hangishClient();
     QMap<QString, ClientConversationState> getConversations();
+    QString uniqueName() const;
 
     ~HangingConnection();
 
