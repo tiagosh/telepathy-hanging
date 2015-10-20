@@ -49,8 +49,6 @@ public:
     void updateTypingState(const ClientSetTypingNotification &notification);
     Tp::BaseChannelPtr baseChannel();
     void sendDeliveryReport(const QString &messageId, QString identifier, Tp::DeliveryStatus status);
-    void addMembers(QStringList phoneNumbers);
-    Tp::UIntList members();
     QString conversationId();
 
 private Q_SLOTS:
@@ -60,9 +58,7 @@ private:
     ~HangingTextChannel();
     Tp::BaseChannelPtr mBaseChannel;
     HangingConnection *mConnection;
-    QStringList mParticipants;
     uint mMessageCounter;
-    Tp::UIntList mMembers;
     QString mConversationId;
     QString mUserChatId;
     QMap<uint, QString> mPendingMessages;

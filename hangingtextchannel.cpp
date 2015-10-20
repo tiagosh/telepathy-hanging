@@ -22,7 +22,6 @@
 HangingTextChannel::HangingTextChannel(HangingConnection *conn, const QString &conversationId, const QString chatId, QStringList participants, QObject *parent):
     QObject(parent),
     mConnection(conn),
-    mParticipants(participants),
     mMessageCounter(1),
     mConversationId(conversationId),
     mUserChatId(chatId)
@@ -63,15 +62,24 @@ HangingTextChannel::HangingTextChannel(HangingConnection *conn, const QString &c
     baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(mMessagesIface));
 
     if (chatId.isEmpty()) {
-        mGroupIface = Tp::BaseChannelGroupInterface::create(Tp::ChannelGroupFlagHandleOwnersNotAvailable|Tp::ChannelGroupFlagProperties|Tp::ChannelGroupFlagMembersChangedDetailed, conn->selfHandle());
+        Tp::ChannelGroupFlags groupFlags = Tp::ChannelGroupFlagHandleOwnersNotAvailable |
+                Tp::ChannelGroupFlagMembersChangedDetailed |
+                Tp::ChannelGroupFlagProperties;
+        mGroupIface = Tp::BaseChannelGroupInterface::create(mConnection);
+        mGroupIface->setGroupFlags(groupFlags);
+        mGroupIface->setSelfHandle(conn->selfHandle());
         mGroupIface->setAddMembersCallback(Tp::memFun(this,&HangingTextChannel::onAddMembers));
         mGroupIface->setRemoveMembersCallback(Tp::memFun(this,&HangingTextChannel::onRemoveMembers));
 
+        Tp::UIntList members;
+        Q_FOREACH(const QString &participant, participants) {
+            members << mConnection->ensureContactHandle(participant);
+        }
+        mGroupIface->setMembers(members, QVariantMap());
+
         baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(mGroupIface));
-        //addMembers(participants);
 
         ClientConversationState c = mConnection->getConversations()[conversationId];
-//        baseChannel->setInitiatorHandle(mConnection->ensureContactHandle(c.conversation().selfconversationstate().inviterid().chatid().c_str()));
         QString creatorId = c.conversation().selfconversationstate().inviterid().chatid().c_str();
         mRoomIface = Tp::BaseChannelRoomInterface::create(c.conversation().name().c_str(), QString(), creatorId, mConnection->ensureContactHandle(creatorId), QDateTime()/*QDateTime::fromMSecsSinceEpoch(c.conversation().selfconversationstate().invitetimestamp())*/);
         baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(mRoomIface));
@@ -80,7 +88,6 @@ HangingTextChannel::HangingTextChannel(HangingConnection *conn, const QString &c
         mRoomConfigIface->setTitle(c.conversation().name().c_str());
         mRoomConfigIface->setConfigurationRetrieved(true);
         baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(mRoomConfigIface));
-
     }
 
     mChatStateIface = Tp::BaseChannelChatStateInterface::create();
@@ -95,41 +102,16 @@ HangingTextChannel::HangingTextChannel(HangingConnection *conn, const QString &c
 
 void HangingTextChannel::onAddMembers(const Tp::UIntList& handles, const QString& message, Tp::DBusError* error)
 {
+    Q_UNUSED(handles)
     Q_UNUSED(message)
-    addMembers(mConnection->inspectHandles(Tp::HandleTypeContact, handles, error));
+    Q_UNUSED(error)
 }
 
 void HangingTextChannel::onRemoveMembers(const Tp::UIntList& handles, const QString& message, Tp::DBusError* error)
 {
+    Q_UNUSED(handles)
     Q_UNUSED(message)
-    Q_FOREACH(uint handle, handles) {
-        Q_FOREACH(const QString &participant, mConnection->inspectHandles(Tp::HandleTypeContact, Tp::UIntList() << handle, error)) {
-            mParticipants.removeAll(participant);
-        }
-        mMembers.removeAll(handle);
-    }
-    mGroupIface->removeMembers(handles);
-}
-
-void HangingTextChannel::addMembers(QStringList participants)
-{
-    Tp::UIntList handles;
-    Q_FOREACH(const QString &participant, participants) {
-        uint handle = mConnection->ensureContactHandle(participant);
-        handles << handle;
-        if (!mParticipants.contains(participant)) {
-            mParticipants << participant;
-        }
-        if (!mMembers.contains(handle)) {
-            mMembers << handle;
-        }
-    }
-    mGroupIface->addMembers(handles, participants);
-}
-
-Tp::UIntList HangingTextChannel::members()
-{
-    return mMembers;
+    Q_UNUSED(error)
 }
 
 HangingTextChannel::~HangingTextChannel()
@@ -195,6 +177,31 @@ QString HangingTextChannel::conversationId()
 void HangingTextChannel::eventReceived(ClientEvent &event, bool scrollback)
 {
     Tp::MessagePartList partList;
+
+    if (event.has_membershipchange()) {
+        uint actor = mConnection->ensureContactHandle(event.senderid().chatid().c_str());
+        Tp::UIntList members = mGroupIface->members();
+        if (event.membershipchange().type() == LEAVE) {
+            for (int i = 0; i < event.membershipchange().participantid_size(); i++) {
+                QString participant = event.membershipchange().participantid(i).chatid().c_str();
+                uint handle = mConnection->ensureContactHandle(participant);
+                members.removeAll(handle);
+            }
+        } else if (event.membershipchange().type() == JOIN) {
+            for (int i = 0; i < event.membershipchange().participantid_size(); i++) {
+                QString participant = event.membershipchange().participantid(i).chatid().c_str();
+                uint handle = mConnection->ensureContactHandle(participant);
+                members << handle;
+            }
+        }
+        QVariantMap details;
+        details["actor"] = QVariant::fromValue(actor);
+        mGroupIface->setMembers(members, details);
+    }
+
+    if (event.has_conversationrename()) {
+        mRoomConfigIface->setTitle(event.conversationrename().newname().c_str());
+    }
 
     if (!event.chatmessage().has_messagecontent() || event.chatmessage().messagecontent().segment_size() == 0) {
         return;

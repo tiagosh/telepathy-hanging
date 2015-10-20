@@ -105,6 +105,7 @@ private:
     void startMechanismWithData(const QString &mechanism, const QByteArray &data, Tp::DBusError *error);
     void processClientEvent(ClientEvent &event, bool scrollback = false);
     HangingTextChannel* ensureTextChannel(const QString &conversationId, const QString &fromId);
+    quint64 getConversation(const QString &conversationId, bool includeEvent = false);
 
     QMap<uint, QString> mContactHandles;
     QMap<uint, QString> mRoomHandles;
@@ -127,6 +128,7 @@ private:
     QList<quint64> mPendingRequests;
     QMap<QString, ClientConversationParticipantData> mOtherContacts;
     QList<ClientEvent> mPendingNewEvents;
+    QMap<QString, QList<ClientEvent> > mPendingEventsWaitingForConversation;
     Tp::ConnectionStatusReason mDisconnectReason;
 
     Tp::BaseChannelSASLAuthenticationInterfacePtr saslIface;

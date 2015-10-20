@@ -115,7 +115,7 @@ HangingConnection::HangingConnection(const QDBusConnection &dbusConnection,
 
     simplePresenceIface->setStatuses(statuses);
 
-    contactsIface = Tp::BaseConnectionContactsInterface::create();
+    contactsIface = Tp::BaseConnectionContactsInterface::create(this);
     contactsIface->setGetContactAttributesCallback(Tp::memFun(this,&HangingConnection::getContactAttributes));
     contactsIface->setContactAttributeInterfaces(QStringList()
             << TP_QT_IFACE_CONNECTION
@@ -724,16 +724,14 @@ Tp::BaseChannelPtr HangingConnection::createChannel(const QVariantMap &request, 
 
     if (targetHandleType == Tp::HandleTypeRoom) {
         participants << inspectHandles(Tp::HandleTypeContact, qdbus_cast<Tp::UIntList>(request[TP_QT_IFACE_CHANNEL_INTERFACE_CONFERENCE + QLatin1String(".InitialInviteeHandles")]), error);
+        participants << selfID();
         participants.removeDuplicates();
         channel = new HangingTextChannel(this, conversationId, QString(), participants);
-        channel->addMembers(participants << selfID());
-        channel->baseChannel()->setInitiatorHandle(initiatorHandle);
-        channel->baseChannel()->setTargetID(targetID);
     } else {
         participants << mContactHandles.value(targetHandle);
         channel = new HangingTextChannel(this, conversationId, participants.at(0), participants);
-        channel->baseChannel()->setInitiatorHandle(initiatorHandle);
     }
+    channel->baseChannel()->setInitiatorHandle(initiatorHandle);
 
     mTextChannels << channel;
     QObject::connect(channel, SIGNAL(destroyed()), SLOT(onTextChannelClosed()));
@@ -768,16 +766,7 @@ void HangingConnection::onClientSyncAllNewEventsResponse(ClientSyncAllNewEventsR
     }
 
     Q_FOREACH(const QString &conversationId, conversationIds) {
-        ClientGetConversationRequest clientGetConversationRequest;
-        ClientConversationSpec *clientConversationSpec =  new ClientConversationSpec();
-        ClientConversationId *clientConversationId = new ClientConversationId();
-
-        clientGetConversationRequest.set_includeevent(false);
-        clientConversationSpec->set_allocated_conversationid(clientConversationId);
-        clientConversationId->set_id(conversationId.toLatin1().data());
-
-        clientGetConversationRequest.set_allocated_conversationspec(clientConversationSpec);
-        mPendingRequests << mHangishClient->getConversation(clientGetConversationRequest);
+        mPendingRequests << getConversation(conversationId);
     }
 }
 
@@ -816,7 +805,8 @@ void HangingConnection::onClientQueryPresenceResponse(quint64,ClientQueryPresenc
 
 void HangingConnection::onClientGetConversationResponse(quint64 requestId, ClientGetConversationResponse &cgcr)
 {
-    mConversations[cgcr.conversationstate().conversationid().id().c_str()]  = cgcr.conversationstate();
+    QString conversationId = cgcr.conversationstate().conversationid().id().c_str();
+    mConversations[conversationId] = cgcr.conversationstate();
 
     for (int i = 0; i < cgcr.conversationstate().conversation().participantdata_size(); i++) {
         ClientConversationParticipantData participantData = cgcr.conversationstate().conversation().participantdata(i);
@@ -838,6 +828,14 @@ void HangingConnection::onClientGetConversationResponse(quint64 requestId, Clien
         Q_FOREACH (ClientEvent event, mPendingNewEvents) {
             processClientEvent(event, true);
         }
+        mPendingNewEvents.clear();
+    }
+
+    if (mPendingEventsWaitingForConversation.contains(conversationId)) {
+        Q_FOREACH(ClientEvent event, mPendingEventsWaitingForConversation[conversationId]) {
+            processClientEvent(event, true);
+        }
+        mPendingEventsWaitingForConversation.remove(conversationId);
     }
 }
 
@@ -886,6 +884,15 @@ HangingTextChannel* HangingConnection::ensureTextChannel(const QString &conversa
 void HangingConnection::processClientEvent(ClientEvent &event, bool scrollback)
 {
     QString conversationId(event.conversationid().id().c_str());
+    if (!mConversations.contains(conversationId)) {
+        bool shouldRetrieve = !mPendingEventsWaitingForConversation.contains(conversationId);
+        mPendingEventsWaitingForConversation[conversationId] << event;
+        if (shouldRetrieve) {
+            getConversation(conversationId);
+        }
+        return;
+    }
+
     QString fromId(event.senderid().chatid().c_str());
     HangingTextChannel *channel = ensureTextChannel(conversationId, fromId);
     if (channel) {
@@ -983,4 +990,18 @@ uint HangingConnection::newRoomHandle(const QString &identifier)
 {
     mRoomHandles[++mHandleCount] = identifier;
     return mHandleCount;
+}
+
+quint64 HangingConnection::getConversation(const QString &conversationId, bool includeEvent)
+{
+    ClientGetConversationRequest clientGetConversationRequest;
+    ClientConversationSpec *clientConversationSpec =  new ClientConversationSpec();
+    ClientConversationId *clientConversationId = new ClientConversationId();
+
+    clientGetConversationRequest.set_includeevent(includeEvent);
+    clientConversationSpec->set_allocated_conversationid(clientConversationId);
+    clientConversationId->set_id(conversationId.toLatin1().data());
+
+    clientGetConversationRequest.set_allocated_conversationspec(clientConversationSpec);
+    return mHangishClient->getConversation(clientGetConversationRequest);
 }
