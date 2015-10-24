@@ -116,7 +116,7 @@ HangingConnection::HangingConnection(const QDBusConnection &dbusConnection,
 
     simplePresenceIface->setStatuses(statuses);
 
-    contactsIface = Tp::BaseConnectionContactsInterface::create(this);
+    contactsIface = Tp::BaseConnectionContactsInterface::create();
     contactsIface->setGetContactAttributesCallback(Tp::memFun(this,&HangingConnection::getContactAttributes));
     contactsIface->setContactAttributeInterfaces(QStringList()
             << TP_QT_IFACE_CONNECTION

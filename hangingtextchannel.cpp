@@ -65,7 +65,7 @@ HangingTextChannel::HangingTextChannel(HangingConnection *conn, const QString &c
         Tp::ChannelGroupFlags groupFlags = Tp::ChannelGroupFlagHandleOwnersNotAvailable |
                 Tp::ChannelGroupFlagMembersChangedDetailed |
                 Tp::ChannelGroupFlagProperties;
-        mGroupIface = Tp::BaseChannelGroupInterface::create(mConnection);
+        mGroupIface = Tp::BaseChannelGroupInterface::create();
         mGroupIface->setGroupFlags(groupFlags);
         mGroupIface->setSelfHandle(conn->selfHandle());
         mGroupIface->setAddMembersCallback(Tp::memFun(this,&HangingTextChannel::onAddMembers));
@@ -107,11 +107,12 @@ void HangingTextChannel::onAddMembers(const Tp::UIntList& handles, const QString
     Q_UNUSED(error)
 }
 
-void HangingTextChannel::onRemoveMembers(const Tp::UIntList& handles, const QString& message, Tp::DBusError* error)
+void HangingTextChannel::onRemoveMembers(const Tp::UIntList& handles, const QString& message, uint reason, Tp::DBusError* error)
 {
     Q_UNUSED(handles)
     Q_UNUSED(message)
     Q_UNUSED(error)
+    Q_UNUSED(reason)
 }
 
 HangingTextChannel::~HangingTextChannel()
