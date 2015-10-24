@@ -66,18 +66,19 @@ HangingTextChannel::HangingTextChannel(HangingConnection *conn, const QString &c
                 Tp::ChannelGroupFlagMembersChangedDetailed |
                 Tp::ChannelGroupFlagProperties;
         mGroupIface = Tp::BaseChannelGroupInterface::create();
-        mGroupIface->setGroupFlags(groupFlags);
-        mGroupIface->setSelfHandle(conn->selfHandle());
         mGroupIface->setAddMembersCallback(Tp::memFun(this,&HangingTextChannel::onAddMembers));
         mGroupIface->setRemoveMembersCallback(Tp::memFun(this,&HangingTextChannel::onRemoveMembers));
 
+        baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(mGroupIface));
+
+        mGroupIface->setGroupFlags(groupFlags);
+        mGroupIface->setSelfHandle(conn->selfHandle());
         Tp::UIntList members;
         Q_FOREACH(const QString &participant, participants) {
             members << mConnection->ensureContactHandle(participant);
         }
         mGroupIface->setMembers(members, QVariantMap());
 
-        baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(mGroupIface));
 
         ClientConversationState c = mConnection->getConversations()[conversationId];
         QString creatorId = c.conversation().selfconversationstate().inviterid().chatid().c_str();
