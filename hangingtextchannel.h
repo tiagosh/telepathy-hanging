@@ -42,7 +42,7 @@ public:
     //telepathy callbacks
     QString sendMessage(Tp::MessagePartList message, uint flags, Tp::DBusError* error);
     void onAddMembers(const Tp::UIntList& handles, const QString& message, Tp::DBusError* error);
-    void onRemoveMembers(const Tp::UIntList& handles, const QString& message, Tp::DBusError* error);
+    void onRemoveMembers(const Tp::UIntList& handles, const QString& message, uint reason, Tp::DBusError* error);
     void setChatState(uint state, Tp::DBusError *error);
 
     void eventReceived(ClientEvent &event, bool scrollback = false);

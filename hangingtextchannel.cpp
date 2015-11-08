@@ -65,19 +65,20 @@ HangingTextChannel::HangingTextChannel(HangingConnection *conn, const QString &c
         Tp::ChannelGroupFlags groupFlags = Tp::ChannelGroupFlagHandleOwnersNotAvailable |
                 Tp::ChannelGroupFlagMembersChangedDetailed |
                 Tp::ChannelGroupFlagProperties;
-        mGroupIface = Tp::BaseChannelGroupInterface::create(mConnection);
-        mGroupIface->setGroupFlags(groupFlags);
-        mGroupIface->setSelfHandle(conn->selfHandle());
+        mGroupIface = Tp::BaseChannelGroupInterface::create();
         mGroupIface->setAddMembersCallback(Tp::memFun(this,&HangingTextChannel::onAddMembers));
         mGroupIface->setRemoveMembersCallback(Tp::memFun(this,&HangingTextChannel::onRemoveMembers));
 
+        baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(mGroupIface));
+
+        mGroupIface->setGroupFlags(groupFlags);
+        mGroupIface->setSelfHandle(conn->selfHandle());
         Tp::UIntList members;
         Q_FOREACH(const QString &participant, participants) {
             members << mConnection->ensureContactHandle(participant);
         }
         mGroupIface->setMembers(members, QVariantMap());
 
-        baseChannel->plugInterface(Tp::AbstractChannelInterfacePtr::dynamicCast(mGroupIface));
 
         ClientConversationState c = mConnection->getConversations()[conversationId];
         QString creatorId = c.conversation().selfconversationstate().inviterid().chatid().c_str();
@@ -107,11 +108,12 @@ void HangingTextChannel::onAddMembers(const Tp::UIntList& handles, const QString
     Q_UNUSED(error)
 }
 
-void HangingTextChannel::onRemoveMembers(const Tp::UIntList& handles, const QString& message, Tp::DBusError* error)
+void HangingTextChannel::onRemoveMembers(const Tp::UIntList& handles, const QString& message, uint reason, Tp::DBusError* error)
 {
     Q_UNUSED(handles)
     Q_UNUSED(message)
     Q_UNUSED(error)
+    Q_UNUSED(reason)
 }
 
 HangingTextChannel::~HangingTextChannel()
@@ -157,9 +159,18 @@ QString HangingTextChannel::sendMessage(Tp::MessagePartList message, uint flags,
     uint generatedId = (uint)(QDateTime::currentMSecsSinceEpoch() % qint64(4294967295u));
     clientEventRequestHeader->set_clientgeneratedid(generatedId);
     clientEventRequestHeader->set_expectedotr(ON_THE_RECORD);
-    Segment *segment = clientMessageContent->add_segment();
-    segment->set_type(Segment_SegmentType_TEXT);
-    segment->set_text(body["content"].variant().toString().toStdString().c_str());
+    QStringList segments = body["content"].variant().toString().split("\n");
+    QStringListIterator it(segments);
+    while (it.hasNext()) {
+        QString textSegment = it.next();
+        Segment *segment = clientMessageContent->add_segment();
+        segment->set_type(Segment_SegmentType_TEXT);
+        segment->set_text(textSegment.toStdString().c_str());
+        if (it.hasNext()) {
+            Segment *breakSegment = clientMessageContent->add_segment();
+            breakSegment->set_type(Segment_SegmentType_LINE_BREAK);
+        }
+    }
 
     clientSendChatMessageRequest.set_allocated_eventrequestheader(clientEventRequestHeader);
     clientSendChatMessageRequest.set_allocated_messagecontentlist(clientMessageContentList);
